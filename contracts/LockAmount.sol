@@ -1,41 +1,65 @@
 pragma solidity ^0.5.0;
+
 import "./Ownable.sol";
 
 contract LockAmount is Ownable {
-    
+    /**
+     * @dev 락정보 정의 (시간, 락금액)
+     */
     struct LockInfo {
         uint256 timestamp;
         uint256 lockedAmount;
     }
     
+    /**
+     * @dev 락정보
+     */
     mapping (address => string) internal _accountLockTypes;
     mapping (string => LockInfo[]) internal _lockInfoTable;
     
-    function viewLockedAmountOfLockTable(address account) public view returns (uint256) {
+    /**
+     * @dev 락테이블에서 현재시간의 락잔액조회
+     */
+    function getLockedAmountOfLockTable(address account) public view returns (uint256) {
         string memory lockType = _accountLockTypes[account];
-        uint256 lockedAmount = 0;
         if (bytes(lockType).length != 0) {
+            // 락금액 검색
             LockInfo[] memory array = _lockInfoTable[lockType];
             for (uint256 i = 0; i < array.length; i++) {
-                if (array[i].timestamp >= block.timestamp) break;
-                lockedAmount = array[i].lockedAmount;
+                if (array[i].timestamp >= block.timestamp) {
+                    return array[i].lockedAmount;
+                }
             }
         }
-        return lockedAmount;
+        return 0;
     }
     
-    function doAccountLockType(address account, string memory lockType) onlyOwner public returns (bool) {
+    function getblockTimestamp() public view returns (uint256) {
+        return block.timestamp;
+    }
+    
+    /**
+     * @dev ADMIN 락타입 설정
+     */
+    function setAccountLockType(address account, string memory lockType) onlyOwner public returns (bool) {
         _accountLockTypes[account] = lockType;
         return true;
     }
     
-    function viewAddressLockType (address account) public view returns (string memory) {
+    /**
+     * @dev 락타입
+     */
+    function getAddressLockType (address account) public view returns (string memory) {
         return _accountLockTypes[account];
     }
     
-    function doAddLockInfo(string memory lockType, uint256 timestamp, uint256 lockAmount) onlyOwner public returns (bool) {
+    /**
+     * @dev ADMIN 락정보 추가
+     */
+    function addLockInfo(string memory lockType, uint256 timestamp, uint256 lockAmount) onlyOwner public returns (bool) {
         require(bytes(lockType).length != 0, "lockType must be not empty");
 
+        // 락정보 인덱스 검색
         uint256 index = 0;
         LockInfo[] storage array = _lockInfoTable[lockType];
         for (index = 0; index < array.length; index++) {
@@ -47,6 +71,7 @@ contract LockAmount is Ownable {
             return true;
         }
         
+        // 락정보 삽입
         array.length++;
         for (uint256 i = array.length - 1; i > index; i--) {
             array[i] = array[i - 1];
@@ -56,12 +81,16 @@ contract LockAmount is Ownable {
         return true;
     }
     
-    function doRemoveLockInfo(string memory lockType, uint256 timestamp) onlyOwner public returns (bool) {
+    /**
+     * @dev ADMIN 락정보 삭제
+     */
+    function removeLockInfo(string memory lockType, uint256 timestamp) onlyOwner public returns (bool) {
         require(bytes(lockType).length != 0, "lockType must be not empty");
 
         LockInfo[] storage array = _lockInfoTable[lockType];
         if (array.length == 0) return false;
 
+        // 락정보 인덱스 검색
         uint256 index = 2 ** 256 - 1;
         for (uint256 i = 0; i < array.length; i++) {
             if (array[i].timestamp == timestamp) {
@@ -72,6 +101,7 @@ contract LockAmount is Ownable {
         
         if (index == 2 ** 256 - 1) return false;
 
+        // 락정보 삭제
         for (uint256 j = index; j < array.length - 1; j++) {
             array[j] = array[j + 1];
         }
@@ -81,12 +111,16 @@ contract LockAmount is Ownable {
         return true;
     }
 
-    function doClearLockInfo(string memory lockType) onlyOwner public returns (bool) {
+    /**
+     * @dev ADMIN 락정보 클리어
+     */
+    function clearLockInfo(string memory lockType) onlyOwner public returns (bool) {
         require(bytes(lockType).length != 0, "lockType must be not empty");
 
         LockInfo[] storage array = _lockInfoTable[lockType];
         if (array.length == 0) return false;
         
+        // 락정보 클리어
         for (uint256 i = 0; i < array.length; i++) {
             delete array[i];
         }
@@ -95,15 +129,24 @@ contract LockAmount is Ownable {
         return true;
     }
 
-    function viewLockInfoCount(string memory lockType) public view returns (uint256) {
+    /**
+     * @dev 락타입별 정보 개수 조회
+     */
+    function getLockInfoCount(string memory lockType) public view returns (uint256) {
         return _lockInfoTable[lockType].length;
     }
 
-    function viewLockInfoAtIndex(string memory lockType, uint256 index) public view returns (uint256, uint256) {
+    /**
+     * @dev 락타입별 인덱스로 시간 조회
+     */
+    function getLockInfoAtIndex(string memory lockType, uint256 index) public view returns (uint256, uint256) {
         return (_lockInfoTable[lockType][index].timestamp, _lockInfoTable[lockType][index].lockedAmount);
     }
     
-    function viewLockInfo(string memory lockType) view public returns (uint256[] memory, uint256[] memory) {
+    /**
+     * @dev 락타입별 시간, 락금액 조회
+     */
+    function getLockInfo(string memory lockType) public view returns (uint256[] memory, uint256[] memory) {
         uint256 index = 0;
         
         LockInfo[] memory array = _lockInfoTable[lockType];
