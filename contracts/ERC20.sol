@@ -153,6 +153,7 @@ contract ERC20 is Context, IERC20 {
 
         _totalSupply = _totalSupply.add(amount);
         _balances[account] = _balances[account].add(amount);
+        emit Mint(account, amount);
         emit Transfer(address(0), account, amount);
     }
 
@@ -173,6 +174,7 @@ contract ERC20 is Context, IERC20 {
         _balances[account] = _balances[account].sub(amount, "ERC20: burn amount exceeds balance");
         _totalSupply = _totalSupply.sub(amount);
         emit Transfer(account, address(0), amount);
+        emit Burn(account, amount);
     }
 
     /**

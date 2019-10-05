@@ -18,6 +18,14 @@ contract LockAmount is Ownable {
     mapping (string => LockInfo[]) internal _lockInfoTable;
     
     /**
+     * @dev 이벤트
+     */
+    event SetAccountLockType(address account, string lockType);
+    event AddLockInfo(string  lockType, uint256 timestamp, uint256 lockAmount);
+    event RemoveLockInfo(string lockType, uint256 timestamp);
+    event ClearLockInfo(string lockType);
+    
+    /**
      * @dev 락테이블에서 현재시간의 락잔액조회
      */
     function getLockedAmountOfLockTable(address account) public view returns (uint256) {
@@ -43,6 +51,7 @@ contract LockAmount is Ownable {
      */
     function setAccountLockType(address account, string memory lockType) onlyOwner public returns (bool) {
         _accountLockTypes[account] = lockType;
+        emit SetAccountLockType(account, lockType);
         return true;
     }
     
@@ -66,10 +75,17 @@ contract LockAmount is Ownable {
             if (array[index].timestamp < timestamp) continue;
             if (array[index].timestamp > timestamp) break;
 
+            if (index - 1 < array.length && array[index - 1].lockedAmount < lockAmount) return false;          
+            if (index + 1 < array.length && array[index + 1].lockedAmount > lockAmount) return false;
+            
             array[index].lockedAmount = lockAmount;
             
+            emit AddLockInfo(lockType, timestamp, lockAmount);
             return true;
         }
+        
+        if (index - 1 < array.length && array[index - 1].lockedAmount < lockAmount) return false;          
+        if (index < array.length && array[index].lockedAmount > lockAmount) return false;
         
         // 락정보 삽입
         array.length++;
@@ -78,6 +94,7 @@ contract LockAmount is Ownable {
         }
         array[index] = LockInfo(timestamp, lockAmount);
         
+        emit AddLockInfo(lockType, timestamp, lockAmount);
         return true;
     }
     
@@ -108,6 +125,7 @@ contract LockAmount is Ownable {
         delete array[array.length - 1];
         array.length--;
         
+        emit RemoveLockInfo(lockType, timestamp);
         return true;
     }
 
@@ -126,6 +144,7 @@ contract LockAmount is Ownable {
         }
         array.length = 0;
         
+        emit ClearLockInfo(lockType);
         return true;
     }
 
