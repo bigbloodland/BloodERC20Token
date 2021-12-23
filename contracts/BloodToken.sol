@@ -31,7 +31,9 @@ contract BloodToken is ERC20, ERC20Detailed, LockAmount {
         uint256 lockedAmount = getLockedAmountOfLockTable(account);
         
         // 현재 잔액 락금액을 뺌, 락금액이 더 큰 경우 0
-        if (_balances[account] < lockedAmount) return 0;
+        if (_balances[account] < lockedAmount) {
+            return 0;
+        }
         
         return _balances[account].sub(lockedAmount);
     }
